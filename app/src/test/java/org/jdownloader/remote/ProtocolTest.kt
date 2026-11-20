@@ -36,6 +36,18 @@ class ProtocolTest {
         val token = MyJdCrypto.token(MyJdCrypto.unhex(seeded.deviceSecret), seeded.session)
         return respond(MyJdCrypto.encrypt(token, buildJsonObject { put("rid", payload.getValue("rid")); put("data", data) }.toString()))
     }
+    @Test fun backgroundPackageQueryWorksWithoutAnInMemoryDevice() = runTest {
+        val api = seededApi { request, payload ->
+            assertEquals("/t_${seeded.session}_saved-device/downloadsV2/queryPackages", request.url.encodedPath)
+            val query = Json.parseToJsonElement(payload.getValue("params").jsonArray.single().jsonPrimitive.content)
+            assertTrue(query.jsonObject.getValue("finished").jsonPrimitive.boolean)
+            encrypted(payload, Json.parseToJsonElement("""[{"uuid":42,"name":"Folder","finished":true}]"""))
+        }
+        try {
+            val packages = api.queryPackages("saved-device", buildJsonObject { put("finished", true) }).transfers()
+            assertEquals(true, packages.single().finished)
+        } finally { api.http.close() }
+    }
     @Test fun signedConnectAndReconnectRotateCorrectKey() = runTest {
         val storage = MemorySessions(); val api = MyJdApiClient(storage)
         val loginKey = MyJdCrypto.secret("test@example.org", "secret", "server")

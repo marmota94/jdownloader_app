@@ -69,8 +69,26 @@
     <string name="download_actions">Download controls</string>
     <string name="resume">Resume</string>
     <string name="pause_only">Pause</string>
-    <string name="transfer_size">%1$d / %2$d KiB</string>
+    <string name="transfer_size">%1$s / %2$s</string>
+    <string name="speed_per_second">%1$s/s</string>
+    <string name="accent_color">Accent color</string>
+    <string name="accent_wallpaper">Wallpaper</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_purple">Purple</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_pink">Pink</string>
     <string name="remember_session">Keep me signed in for 30 days</string>
     <string name="remember_session_detail">Stores an encrypted sign-in key on this device.</string>
     <string name="session_expired">Your session expired. Sign in again.</string>
+    <string name="folder_expanded">Expanded</string>
+    <string name="folder_collapsed">Collapsed</string>
+    <string name="empty_folder">No files in this folder.</string>
+    <string name="transfer_actions">Actions for %1$s</string>
+    <string name="confirm_remove_folder">Remove the folder %1$s and its files from the list? Files on disk will be kept.</string>
+    <string name="device_actions">Server actions</string>
+    <string name="completion_alerts">Package completion notifications</string>
+    <string name="completion_alerts_detail">Alerts you when a package finishes on the selected server. Background checks may be delayed.</string>
+    <string name="package_finished">Package download complete</string>
 </resources>

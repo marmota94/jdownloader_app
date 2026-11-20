@@ -69,8 +69,26 @@
     <string name="download_actions">Controles de descarga</string>
     <string name="resume">Reanudar</string>
     <string name="pause_only">Pausar</string>
-    <string name="transfer_size">%1$d / %2$d KiB</string>
+    <string name="transfer_size">%1$s / %2$s</string>
+    <string name="speed_per_second">%1$s/s</string>
+    <string name="accent_color">Color de acento</string>
+    <string name="accent_wallpaper">Fondo de pantalla</string>
+    <string name="accent_teal">Turquesa</string>
+    <string name="accent_blue">Azul</string>
+    <string name="accent_purple">Morado</string>
+    <string name="accent_green">Verde</string>
+    <string name="accent_orange">Naranja</string>
+    <string name="accent_pink">Rosado</string>
     <string name="remember_session">Mantener mi sesión durante 30 días</string>
     <string name="remember_session_detail">Guarda una clave de inicio de sesión cifrada en este dispositivo.</string>
     <string name="session_expired">Tu sesión expiró. Inicia sesión de nuevo.</string>
+    <string name="folder_expanded">Expandida</string>
+    <string name="folder_collapsed">Contraída</string>
+    <string name="empty_folder">No hay archivos en esta carpeta.</string>
+    <string name="transfer_actions">Acciones para %1$s</string>
+    <string name="confirm_remove_folder">¿Eliminar la carpeta %1$s y sus archivos de la lista? Se conservarán los archivos del disco.</string>
+    <string name="device_actions">Acciones del servidor</string>
+    <string name="completion_alerts">Notificaciones de paquetes completados</string>
+    <string name="completion_alerts_detail">Te avisa cuando termina un paquete en el servidor seleccionado. Las comprobaciones en segundo plano pueden demorarse.</string>
+    <string name="package_finished">Descarga del paquete completada</string>
 </resources>

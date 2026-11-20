@@ -152,9 +152,17 @@ class RequestIds { private val value = AtomicLong(System.currentTimeMillis()); f
             direct = null; connection.value = Connection.CLOUD
         }
     }
-    suspend fun rpc(path: String, params: List<JsonElement>): JsonElement = mutex.withLock { authenticated { s ->
-        val d = device ?: throw ApiException("DEVICE_REQUIRED")
-        val host = direct
+    suspend fun rpc(path: String, params: List<JsonElement>): JsonElement =
+        callDevice(path, params, targetId = null)
+
+    suspend fun queryPackages(deviceId: String, query: JsonObject): JsonElement =
+        callDevice("/downloadsV2/queryPackages", listOf(query), targetId = deviceId)
+
+    private suspend fun callDevice(path: String, params: List<JsonElement>, targetId: String?): JsonElement = mutex.withLock { authenticated { s ->
+        val selected = device
+        val d = if (targetId != null && selected?.id != targetId) Device(targetId, "")
+            else selected ?: throw ApiException("DEVICE_REQUIRED")
+        val host = direct.takeIf { d.id == selected?.id }
         if (host == null) deviceCall(s, d, path, params, base) else try {
             deviceCall(s, d, path, params, host)
         } catch (e: CancellationException) { throw e } catch (e: Exception) {

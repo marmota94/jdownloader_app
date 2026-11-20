@@ -14,19 +14,33 @@ import kotlinx.serialization.json.*
 @Serializable data class SignInRecovery(val email: String, val loginKey: String, val expiresAt: Long)
 enum class Connection { CLOUD, LAN }
 enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
-data class Settings(val theme: ThemeMode = ThemeMode.SYSTEM, val dynamic: Boolean = true, val locale: String = "", val cnl: Boolean = false)
-data class Transfer(val id: Long, val name: String, val loaded: Long, val total: Long, val status: String, val packageId: Long = 0)
-data class Snapshot(val packages: List<Transfer>, val links: List<Transfer>, val speed: Long, val state: String, val captchas: List<JsonObject>)
+enum class AccentColor { TEAL, BLUE, PURPLE, GREEN, ORANGE, PINK }
+data class Settings(
+    val theme: ThemeMode = ThemeMode.SYSTEM, val dynamic: Boolean = true, val locale: String = "",
+    val cnl: Boolean = false, val accent: AccentColor = AccentColor.TEAL,
+    val completionAlerts: Boolean = false
+)
+data class Transfer(
+    val id: Long, val name: String, val loaded: Long, val total: Long, val status: String,
+    val packageId: Long = 0, val finished: Boolean? = null
+)
+data class TransferListData(val packages: List<Transfer>, val links: List<Transfer>)
+data class DownloadStatus(val speed: Long, val state: String)
 fun JsonElement.text(key: String): String = (this as? JsonObject)?.get(key)?.let { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
 fun JsonElement.number(key: String): Long = text(key).toLongOrNull() ?: 0
 fun JsonElement.transfers(): List<Transfer> = (this as? JsonArray).orEmpty().map {
-    Transfer(it.number("uuid"), it.text("name"), it.number("bytesLoaded"), it.number("bytesTotal"), it.text("status").ifBlank { it.text("availability") }, it.number("packageUUID"))
+    Transfer(it.number("uuid"), it.text("name"), it.number("bytesLoaded"), it.number("bytesTotal"),
+        it.text("status").ifBlank { it.text("availability") }, it.number("packageUUID"),
+        it.text("finished").toBooleanStrictOrNull())
 }
 interface DownloaderRepository {
     suspend fun login(email: String, password: String, rememberSession: Boolean)
     suspend fun devices(): List<Device>
     suspend fun select(device: Device)
-    suspend fun snapshot(collector: Boolean): Snapshot
+    suspend fun transfers(collector: Boolean): TransferListData
+    suspend fun downloadStatus(): DownloadStatus
+    suspend fun checkPackageCompletion()
+    suspend fun captchas(): List<JsonObject>
     suspend fun rpc(path: String, vararg params: JsonElement): JsonElement
     suspend fun addLinks(links: String, password: String = "", name: String = "")
     suspend fun uploadContainer(type: String, bytes: ByteArray)

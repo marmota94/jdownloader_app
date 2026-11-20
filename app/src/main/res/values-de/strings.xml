@@ -69,8 +69,26 @@
     <string name="download_actions">Downloadsteuerung</string>
     <string name="resume">Fortsetzen</string>
     <string name="pause_only">Pausieren</string>
-    <string name="transfer_size">%1$d / %2$d KiB</string>
+    <string name="transfer_size">%1$s / %2$s</string>
+    <string name="speed_per_second">%1$s/s</string>
+    <string name="accent_color">Akzentfarbe</string>
+    <string name="accent_wallpaper">Hintergrundbild</string>
+    <string name="accent_teal">Türkis</string>
+    <string name="accent_blue">Blau</string>
+    <string name="accent_purple">Violett</string>
+    <string name="accent_green">Grün</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_pink">Rosa</string>
     <string name="remember_session">30 Tage angemeldet bleiben</string>
     <string name="remember_session_detail">Speichert einen verschlüsselten Anmeldeschlüssel auf diesem Gerät.</string>
     <string name="session_expired">Deine Sitzung ist abgelaufen. Melde dich erneut an.</string>
+    <string name="folder_expanded">Ausgeklappt</string>
+    <string name="folder_collapsed">Eingeklappt</string>
+    <string name="empty_folder">Dieser Ordner enthält keine Dateien.</string>
+    <string name="transfer_actions">Aktionen für %1$s</string>
+    <string name="confirm_remove_folder">Ordner %1$s und seine Dateien aus der Liste entfernen? Dateien auf dem Datenträger bleiben erhalten.</string>
+    <string name="device_actions">Serveraktionen</string>
+    <string name="completion_alerts">Benachrichtigungen für fertige Pakete</string>
+    <string name="completion_alerts_detail">Meldet fertige Pakete auf dem ausgewählten Server. Hintergrundprüfungen können sich verzögern.</string>
+    <string name="package_finished">Paketdownload abgeschlossen</string>
 </resources>

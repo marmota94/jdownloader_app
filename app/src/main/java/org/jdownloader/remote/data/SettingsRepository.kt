@@ -30,13 +30,29 @@ private val Context.store by preferencesDataStore("preferences")
     private val dynamic = booleanPreferencesKey("dynamic")
     private val locale = stringPreferencesKey("locale")
     private val cnl = booleanPreferencesKey("cnl")
+    private val accent = stringPreferencesKey("accent")
+    private val completionAlerts = booleanPreferencesKey("completion_alerts")
+    private val completedPackages = stringSetPreferencesKey("completed_packages")
     private val session = stringPreferencesKey("session")
     private val selected = stringPreferencesKey("device")
     private val requestId = longPreferencesKey("last_request_id")
     val settings = context.store.data.map { p -> Settings(
         runCatching { ThemeMode.valueOf(p[theme] ?: "SYSTEM") }.getOrDefault(ThemeMode.SYSTEM),
-        p[dynamic] ?: true, p[locale].orEmpty(), p[cnl] ?: false) }
-    suspend fun update(value: Settings) { context.store.edit { it[theme] = value.theme.name; it[dynamic] = value.dynamic; it[locale] = value.locale; it[cnl] = value.cnl } }
+        p[dynamic] ?: true, p[locale].orEmpty(), p[cnl] ?: false,
+        AccentColor.entries.firstOrNull { it.name == p[accent] } ?: AccentColor.TEAL,
+        p[completionAlerts] ?: false
+    ) }
+    suspend fun update(value: Settings) {
+        context.store.edit {
+            it[theme] = value.theme.name
+            it[dynamic] = value.dynamic
+            it[locale] = value.locale
+            it[cnl] = value.cnl
+            it[accent] = value.accent.name
+            it[completionAlerts] = value.completionAlerts
+            if (!value.completionAlerts) it.remove(completedPackages)
+        }
+    }
     @Synchronized private fun key(): SecretKey {
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         return (ks.getKey("jd-session", null) as? SecretKey) ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
@@ -45,7 +61,10 @@ private val Context.store by preferencesDataStore("preferences")
         }.generateKey()
     }
     override suspend fun saveSession(value: Session?) {
-        if (value == null) { context.store.edit { it.remove(session); it.remove(selected) }; return }
+        if (value == null) {
+            context.store.edit { it.remove(session); it.remove(selected); it.remove(completedPackages) }
+            return
+        }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key()) }
         val bytes = cipher.doFinal(Json.encodeToString(Session.serializer(), value).toByteArray())
         context.store.edit { it[session] = Base64.getEncoder().encodeToString(cipher.iv + bytes) }
@@ -58,7 +77,22 @@ private val Context.store by preferencesDataStore("preferences")
             Json.decodeFromString(Session.serializer(), String(cipher.doFinal(bytes.copyOfRange(12, bytes.size))))
         } catch (_: Exception) { saveSession(null); null }
     }
-    override suspend fun saveDevice(id: String) { context.store.edit { it[selected] = id } }
+    override suspend fun saveDevice(id: String) {
+        context.store.edit {
+            if (it[selected] != id) it.remove(completedPackages)
+            it[selected] = id
+        }
+    }
+    suspend fun recordCompletedPackages(deviceId: String, current: Set<String>): Set<String> {
+        var newlyCompleted = emptySet<String>()
+        context.store.edit {
+            if (it[selected] == deviceId && it[completionAlerts] == true && it[session] != null) {
+                newlyCompleted = newCompletionIds(it[completedPackages], current)
+                it[completedPackages] = current
+            }
+        }
+        return newlyCompleted
+    }
     override suspend fun reserveRequestId(candidate: Long): Long {
         var reserved = candidate
         context.store.edit { p -> reserved = maxOf(candidate, (p[requestId] ?: 0) + 1); p[requestId] = reserved }

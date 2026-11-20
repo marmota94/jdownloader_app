@@ -14,18 +14,19 @@ import org.jdownloader.remote.data.*
 
 data class RemoteState(
     val loading: Boolean = false, val signedIn: Boolean = false, val devices: List<Device> = emptyList(),
-    val selected: Device? = null, val tab: Int = 0, val snapshot: Snapshot? = null,
+    val selected: Device? = null, val tab: Int = 0,
+    val downloads: TransferListData? = null, val linkGrabber: TransferListData? = null,
+    val downloadStatus: DownloadStatus? = null, val captchas: List<JsonObject> = emptyList(),
     val error: String? = null, val notice: Boolean = false, val captcha: JsonElement? = null,
     val incoming: String = "", val pendingContainers: Int = 0
 )
-@HiltViewModel class RemoteViewModel @Inject constructor(private val repo: DownloaderRepository, val settingsRepo: SettingsRepository, api: MyJdApiClient, val cnlServer: org.jdownloader.remote.cnl.ClicknLoadServer) : ViewModel() {
+@HiltViewModel class RemoteViewModel @Inject constructor(private val repo: DownloaderRepository, val settingsRepo: SettingsRepository, val cnlServer: org.jdownloader.remote.cnl.ClicknLoadServer) : ViewModel() {
     private val mutable = MutableStateFlow(RemoteState())
     val state = mutable.asStateFlow()
     private val currentSettings = MutableStateFlow(Settings())
     val settings = currentSettings.asStateFlow()
     private val initializedSettings = MutableStateFlow(false)
     val settingsReady = initializedSettings.asStateFlow()
-    val connection = api.connection.asStateFlow()
     private var polling: Job? = null
     private val actions = Mutex()
     private var foreground = false
@@ -54,42 +55,91 @@ data class RemoteState(
     private fun reportError(error: Exception) {
         val kind = (error as? ApiException)?.kind ?: "REQUEST_FAILED"
         mutable.update {
-            if (kind == "LOGIN_REQUIRED") it.copy(signedIn = false, selected = null, snapshot = null, error = kind)
+            if (kind == "LOGIN_REQUIRED") it.withoutDevice().copy(signedIn = false, error = kind)
             else it.copy(error = kind)
         }
         if (kind == "LOGIN_REQUIRED") polling?.cancel()
     }
+    private fun RemoteState.withoutDevice() = copy(
+        selected = null, downloads = null, linkGrabber = null, downloadStatus = null,
+        captchas = emptyList(), captcha = null
+    )
     private suspend fun selectInternal(device: Device) {
-        repo.select(device); mutable.update { it.copy(selected = device, snapshot = null) }
-        sendPendingContainers()
-        startPolling()
+        polling?.cancel()
+        repo.select(device)
+        mutable.update { it.withoutDevice().copy(selected = device) }
+        try {
+            try { sendPendingContainers() } finally { refreshInternal(bothLists = true) }
+        } finally {
+            startPolling(immediate = false)
+        }
     }
-    private fun startPolling() {
+    private fun startPolling(immediate: Boolean = true) {
         polling?.cancel()
         if (!foreground || state.value.selected == null) return
         polling = viewModelScope.launch {
+            if (!immediate) delay(3000)
             while (isActive) {
-                try { refreshInternal() } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { reportError(e) }
+                actions.withLock {
+                    try { refreshInternal() } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { reportError(e) }
+                }
                 delay(3000)
             }
         }
     }
     fun setForeground(value: Boolean) { foreground = value; if (value) startPolling() else { polling?.cancel(); polling = null } }
     fun select(device: Device) = action { selectInternal(device) }
-    fun pickDevice() { polling?.cancel(); mutable.update { it.copy(selected = null, snapshot = null) }; action { val devices = repo.devices(); mutable.update { it.copy(devices = devices) } } }
-    fun tab(value: Int) { mutable.update { it.copy(tab = value) }; if (value < 2) refresh() }
-    private suspend fun refreshInternal() {
+    fun pickDevice() {
+        polling?.cancel()
+        action {
+            polling?.cancel()
+            mutable.update { it.withoutDevice() }
+            val devices = repo.devices()
+            mutable.update { it.copy(devices = devices) }
+        }
+    }
+    fun tab(value: Int) { mutable.update { it.copy(tab = value) } }
+    private suspend fun refreshInternal(bothLists: Boolean = false) {
         val before = state.value
         if (before.selected == null) return
-        val snapshot = repo.snapshot(before.tab == 1)
-        mutable.update { if (it.tab == before.tab && it.selected == before.selected) it.copy(snapshot = snapshot) else it }
+        var failure: Exception? = null
+        // A failed endpoint should not hide the successful results from the other ones.
+        suspend fun read(update: suspend () -> Unit) {
+            try { update() } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (e is ApiException && e.kind == "LOGIN_REQUIRED") throw e
+                if (failure == null) failure = e
+            }
+        }
+        val activeCollector = before.tab == 1
+        var fetchedDownloads = false
+        for (collector in listOf(activeCollector, !activeCollector)) {
+            val missing = if (collector) before.linkGrabber == null else before.downloads == null
+            if (collector == activeCollector || bothLists || missing) read {
+                if (!collector) fetchedDownloads = true
+                val transfers = repo.transfers(collector)
+                mutable.update { if (collector) it.copy(linkGrabber = transfers) else it.copy(downloads = transfers) }
+            }
+        }
+        if (!fetchedDownloads && settings.value.completionAlerts) read { repo.checkPackageCompletion() }
+        read {
+            val status = repo.downloadStatus()
+            mutable.update { it.copy(downloadStatus = status) }
+        }
+        if (before.tab == 3 || bothLists) read {
+            val captchas = repo.captchas()
+            mutable.update { it.copy(captchas = captchas) }
+        }
+        failure?.let { throw it }
     }
-    fun refresh() = action { if (state.value.selected != null) refreshInternal() else { val devices = repo.devices(); mutable.update { it.copy(devices = devices) } } }
+    fun refresh() = action { if (state.value.selected != null) refreshInternal(bothLists = true) else { val devices = repo.devices(); mutable.update { it.copy(devices = devices) } } }
     fun command(path: String, vararg params: JsonElement) = action {
         repo.rpc(path, *params)
-        if (path == "/linkgrabberv2/moveToDownloadlist") repo.rpc("/downloadcontroller/start")
-        refreshInternal()
+        val moved = path == "/linkgrabberv2/moveToDownloadlist"
+        if (moved) repo.rpc("/downloadcontroller/start")
+        refreshInternal(bothLists = moved)
     }
     fun add(links: String, password: String, name: String) = action {
         require(links.isNotBlank()); repo.addLinks(links, password, name); mutable.update { it.copy(notice = true, incoming = "") }; refreshInternal()

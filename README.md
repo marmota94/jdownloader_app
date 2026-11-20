@@ -48,8 +48,9 @@ These are runtime container variables. Keystores are excluded from Docker image 
 2. Open JD Remote, sign in with the same account and select an online device. To enable 30-day recovery, select **Keep me signed in for 30 days** before signing in.
 3. Downloads shows packages and links; Start/Pause/Stop operate on the remote downloader. LinkGrabber accepts URLs, optional package name and passwords. Row actions start, prioritize or remove links/packages. Removing list entries keeps files on disk.
 4. Share text URLs to JD Remote. Open `.dlc`, `.ccf` or `.rsdf` files with it to forward the actual container contents. Imports wait until a device is selected. The limit is 5 MB per container.
-5. In Settings choose System/Light/Dark/AMOLED, dynamic colors, or English/Spanish/German. The application language integrates with Android per-app locale settings.
+5. In Settings, choose System, Light, Dark, or AMOLED under Appearance. Pick an accent color or enable dynamic colors to follow your wallpaper on Android 12 and later. English, Spanish, and German integrate with Android per-app language settings.
 6. Enable Click and Load while using trusted websites. A foreground notification exposes a Stop action. The receiver binds only to `127.0.0.1:9666`. The built-in browser intercepts CNL requests and supplies an asynchronous POST bridge because Android's `shouldInterceptRequest` does not expose request bodies. External browsers can still block HTTPS-to-HTTP requests.
+7. Enable **Package completion notifications** in Settings to get alerts when JDownloader marks a package finished on the selected server. The first check on a server records existing completions silently. With the app closed, Android runs periodic checks when network access and background scheduling allow.
 
 ## Protocol and architecture
 

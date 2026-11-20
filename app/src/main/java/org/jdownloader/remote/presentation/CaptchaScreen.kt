@@ -34,9 +34,9 @@ import org.jdownloader.remote.domain.*
         }
     }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        if (state.snapshot?.captchas.isNullOrEmpty()) Text(stringResource(R.string.no_captchas))
+        if (state.captchas.isEmpty()) Text(stringResource(R.string.no_captchas))
         LazyColumn(Modifier.weight(1f)) {
-            items(state.snapshot?.captchas.orEmpty()) { job ->
+            items(state.captchas) { job ->
                 val id = job.number("id")
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) {
                     Text(job.text("hoster") + " · " + job.text("type"))

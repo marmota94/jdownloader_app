@@ -67,7 +67,25 @@ download_speed	Download speed	Velocidad de descarga	Downloadgeschwindigkeit
 download_actions	Download controls	Controles de descarga	Downloadsteuerung
 resume	Resume	Reanudar	Fortsetzen
 pause_only	Pause	Pausar	Pausieren
-transfer_size	%1$d / %2$d KiB	%1$d / %2$d KiB	%1$d / %2$d KiB
+transfer_size	%1$s / %2$s	%1$s / %2$s	%1$s / %2$s
+speed_per_second	%1$s/s	%1$s/s	%1$s/s
+accent_color	Accent color	Color de acento	Akzentfarbe
+accent_wallpaper	Wallpaper	Fondo de pantalla	Hintergrundbild
+accent_teal	Teal	Turquesa	Türkis
+accent_blue	Blue	Azul	Blau
+accent_purple	Purple	Morado	Violett
+accent_green	Green	Verde	Grün
+accent_orange	Orange	Naranja	Orange
+accent_pink	Pink	Rosado	Rosa
 remember_session	Keep me signed in for 30 days	Mantener mi sesión durante 30 días	30 Tage angemeldet bleiben
 remember_session_detail	Stores an encrypted sign-in key on this device.	Guarda una clave de inicio de sesión cifrada en este dispositivo.	Speichert einen verschlüsselten Anmeldeschlüssel auf diesem Gerät.
 session_expired	Your session expired. Sign in again.	Tu sesión expiró. Inicia sesión de nuevo.	Deine Sitzung ist abgelaufen. Melde dich erneut an.
+folder_expanded	Expanded	Expandida	Ausgeklappt
+folder_collapsed	Collapsed	Contraída	Eingeklappt
+empty_folder	No files in this folder.	No hay archivos en esta carpeta.	Dieser Ordner enthält keine Dateien.
+transfer_actions	Actions for %1$s	Acciones para %1$s	Aktionen für %1$s
+confirm_remove_folder	Remove the folder %1$s and its files from the list? Files on disk will be kept.	¿Eliminar la carpeta %1$s y sus archivos de la lista? Se conservarán los archivos del disco.	Ordner %1$s und seine Dateien aus der Liste entfernen? Dateien auf dem Datenträger bleiben erhalten.
+device_actions	Server actions	Acciones del servidor	Serveraktionen
+completion_alerts	Package completion notifications	Notificaciones de paquetes completados	Benachrichtigungen für fertige Pakete
+completion_alerts_detail	Alerts you when a package finishes on the selected server. Background checks may be delayed.	Te avisa cuando termina un paquete en el servidor seleccionado. Las comprobaciones en segundo plano pueden demorarse.	Meldet fertige Pakete auf dem ausgewählten Server. Hintergrundprüfungen können sich verzögern.
+package_finished	Package download complete	Descarga del paquete completada	Paketdownload abgeschlossen
