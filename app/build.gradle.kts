@@ -11,7 +11,11 @@ android {
     compileSdk = 35
     buildToolsVersion = "35.0.0"
     defaultConfig {
-        applicationId = "org.jdownloader.remote"; minSdk = 26; targetSdk = 35; versionCode = 1; versionName = "1.0.0"
+        applicationId = "org.jdownloader.remote"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = providers.gradleProperty("appVersionCode").get().toInt()
+        versionName = providers.gradleProperty("appVersionName").get()
         val myjdKey = providers.environmentVariable("MYJD_APP_KEY").orElse("org.jdownloader.remote").get()
         buildConfigField("String", "MYJD_APP_KEY", "\"" + myjdKey.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
     }

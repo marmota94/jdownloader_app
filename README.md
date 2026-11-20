@@ -22,6 +22,12 @@ docker compose run --rm android-builder ./gradlew --no-daemon testDebugUnitTest 
 
 APKs from successful requested assemble tasks and test/lint reports are copied to `build-output/`. Initial SDK/Gradle downloads take time; named volumes preserve Gradle caches and the Android debug keystore across container runs, allowing debug APK upgrades without changing their signing identity. Source files are bind-mounted at `/app`; a separate read-only `local.properties` mount points to the container SDK and hides any Windows SDK path. Android Studio is optional. The Gradle wrapper distribution has a pinned SHA-256 checksum.
 
+## Versioning
+
+Set the APK version in `gradle.properties`. Use a semantic version for `appVersionName` and increase the integer `appVersionCode` for every distributed update. Debug and release APKs read the same values.
+
+After verifying the build, commit the version change and create an annotated Git tag matching the version name, such as `v1.0.0`.
+
 ## Release signing
 
 Without signing variables, release produces an unsigned APK. To create a signed release, place an existing keystore in a private folder under the project (ignored by Git), then set environment variables before building:
