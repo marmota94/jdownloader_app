@@ -1,0 +1,18 @@
+services:
+  android-builder:
+    build: .
+    volumes:
+      - .:/app
+      - ./scripts/container-local.properties:/app/local.properties:ro
+      - gradle-cache:/root/.gradle
+      - android-config:/root/.android
+      - ./build-output:/output
+    environment:
+      MYJD_APP_KEY: ${MYJD_APP_KEY:-org.jdownloader.remote}
+      SIGNING_STORE_FILE: ${SIGNING_STORE_FILE:-}
+      SIGNING_STORE_PASSWORD: ${SIGNING_STORE_PASSWORD:-}
+      SIGNING_KEY_ALIAS: ${SIGNING_KEY_ALIAS:-}
+      SIGNING_KEY_PASSWORD: ${SIGNING_KEY_PASSWORD:-}
+volumes:
+  gradle-cache:
+  android-config:

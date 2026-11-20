@@ -1,0 +1,73 @@
+app_name	JD Remote	JD Remote	JD Remote
+login_title	Your downloads, anywhere	Tus descargas, donde estés	Deine Downloads, überall
+login_description	Sign in with your MyJDownloader account. Your password stays on this device only during sign in.	Inicia sesión con tu cuenta MyJDownloader. Tu contraseña permanece en este dispositivo solo durante el inicio de sesión.	Melde dich mit deinem MyJDownloader-Konto an. Dein Passwort bleibt nur während der Anmeldung auf diesem Gerät.
+email	Email	Correo electrónico	E-Mail
+password	Password	Contraseña	Passwort
+sign_in	Sign in	Iniciar sesión	Anmelden
+sign_out	Sign out	Cerrar sesión	Abmelden
+select_device	Choose JDownloader	Selecciona JDownloader	JDownloader auswählen
+devices	Devices	Dispositivos	Geräte
+no_devices	No devices online. Start JDownloader and enable MyJDownloader on your computer.	No hay dispositivos conectados. Abre JDownloader y activa MyJDownloader en tu equipo.	Keine Geräte online. Starte JDownloader und aktiviere MyJDownloader auf deinem Computer.
+pending_containers	%1$d container(s) waiting. Sign in and select a device to import them.	%1$d contenedor(es) en espera. Inicia sesión y selecciona un dispositivo para importarlos.	%1$d Container warten. Melde dich an und wähle ein Gerät für den Import.
+downloads	Downloads	Descargas	Downloads
+linkgrabber	LinkGrabber	Capturador	Linksammler
+browser	CNL Browser	Navegador CNL	CNL-Browser
+captchas	Captchas	Captchas	Captchas
+settings	Settings	Ajustes	Einstellungen
+play	Start	Iniciar	Starten
+pause	Pause / resume	Pausar / reanudar	Pausieren / fortsetzen
+stop	Stop	Detener	Stoppen
+refresh	Refresh	Actualizar	Aktualisieren
+lan	LAN	Red local	LAN
+cloud	Cloud relay	Servidor remoto	Cloud-Relay
+request_error	Request failed. Check your connection and device, then refresh.	La solicitud falló. Comprueba tu conexión y el dispositivo, y actualiza.	Anfrage fehlgeschlagen. Prüfe die Verbindung und das Gerät und aktualisiere die Ansicht.
+auth_error	Session unavailable. Sign out and sign in again.	Sesión no disponible. Cierra sesión e inicia sesión nuevamente.	Sitzung nicht verfügbar. Melde dich ab und erneut an.
+uncertain_error	Connection lost during the command. Refresh to check the result before trying again.	Se perdió la conexión durante la orden. Actualiza para comprobar el resultado antes de repetirla.	Verbindung während des Befehls verloren. Aktualisiere die Ansicht, bevor du den Befehl wiederholst.
+dismiss	Dismiss	Ocultar	Schließen
+links_added	Links sent to JDownloader.	Enlaces enviados a JDownloader.	Links an JDownloader gesendet.
+add_links	Add links	Añadir enlaces	Links hinzufügen
+links	URLs (one per line)	URLs (una por línea)	URLs (eine pro Zeile)
+package_name	Package name (optional)	Nombre del paquete (opcional)	Paketname (optional)
+package_password	Package password (optional)	Contraseña del paquete (opcional)	Paketpasswort (optional)
+send	Send	Enviar	Senden
+empty_list	Nothing here yet.	Aún no hay elementos.	Noch keine Einträge.
+transfer_progress	%1$d / %2$d KiB · %3$s	%1$d / %2$d KiB · %3$s	%1$d / %2$d KiB · %3$s
+priority_high	High priority	Prioridad alta	Hohe Priorität
+remove	Remove	Eliminar	Entfernen
+cleanup	Remove finished links	Eliminar enlaces finalizados	Abgeschlossene Links entfernen
+confirm_remove	Remove %1$s from the list? Files on disk will be kept.	¿Eliminar %1$s de la lista? Se conservarán los archivos del disco.	%1$s aus der Liste entfernen? Dateien auf dem Datenträger bleiben erhalten.
+cancel	Cancel	Cancelar	Abbrechen
+appearance	Appearance	Apariencia	Darstellung
+system	System default	Predeterminado del sistema	Systemstandard
+light	Light	Claro	Hell
+dark	Dark	Oscuro	Dunkel
+amoled	AMOLED black	Negro AMOLED	AMOLED-Schwarz
+dynamic_colors	Dynamic colors	Colores dinámicos	Dynamische Farben
+language	Language	Idioma	Sprache
+english	English	Inglés	Englisch
+spanish	Spanish	Español	Spanisch
+german	German	Alemán	Deutsch
+cnl_service	Click and Load receiver	Receptor Click and Load	Click-and-Load-Empfänger
+cnl_notification	Listening on 127.0.0.1:9666	Escuchando en 127.0.0.1:9666	Empfang auf 127.0.0.1:9666
+cnl_explanation	When enabled, websites can send links to the selected JDownloader through the local receiver or this app’s browser. Enable it only while visiting trusted sites. External browsers may block HTTPS-to-HTTP requests. Android can stop the service; open Settings to enable it again.	Al activarlo, los sitios pueden enviar enlaces al JDownloader seleccionado mediante el receptor local o el navegador de esta app. Actívalo solo al visitar sitios de confianza. Los navegadores externos pueden bloquear solicitudes de HTTPS a HTTP. Android puede detener el servicio; vuelve a Ajustes para activarlo.	Wenn aktiviert, können Webseiten über den lokalen Empfänger oder diesen Browser Links an den ausgewählten JDownloader senden. Aktiviere ihn nur für vertrauenswürdige Seiten. Externe Browser können HTTPS-zu-HTTP-Anfragen blockieren. Android kann den Dienst beenden; aktiviere ihn dann in den Einstellungen erneut.
+browser_address	Website address (HTTPS)	Dirección del sitio (HTTPS)	Webadresse (HTTPS)
+go	Go	Ir	Öffnen
+back	Back	Atrás	Zurück
+cnl_disabled	Enable the Click and Load receiver in Settings to capture links.	Activa el receptor Click and Load en Ajustes para capturar enlaces.	Aktiviere den Click-and-Load-Empfänger in den Einstellungen, um Links zu erfassen.
+no_captchas	No captchas waiting.	No hay captchas pendientes.	Keine offenen Captchas.
+open_captcha	Open challenge	Abrir desafío	Aufgabe öffnen
+captcha_answer	Answer or token	Respuesta o token	Antwort oder Token
+solve	Submit answer	Enviar respuesta	Antwort senden
+skip	Skip	Omitir	Überspringen
+captcha_hint	For token challenges, complete the web challenge when available or paste the resulting token.	Para desafíos de token, completa el desafío web cuando esté disponible o pega el token obtenido.	Löse Token-Aufgaben wenn verfügbar im Browser oder füge das erhaltene Token ein.
+show_password	Show password	Mostrar contraseña	Passwort anzeigen
+hide_password	Hide password	Ocultar contraseña	Passwort ausblenden
+signing_in	Signing in…	Iniciando sesión…	Anmeldung läuft…
+download_speed	Download speed	Velocidad de descarga	Downloadgeschwindigkeit
+download_actions	Download controls	Controles de descarga	Downloadsteuerung
+resume	Resume	Reanudar	Fortsetzen
+pause_only	Pause	Pausar	Pausieren
+transfer_size	%1$d / %2$d KiB	%1$d / %2$d KiB	%1$d / %2$d KiB
+remember_session	Keep me signed in for 30 days	Mantener mi sesión durante 30 días	30 Tage angemeldet bleiben
+remember_session_detail	Stores an encrypted sign-in key on this device.	Guarda una clave de inicio de sesión cifrada en este dispositivo.	Speichert einen verschlüsselten Anmeldeschlüssel auf diesem Gerät.
+session_expired	Your session expired. Sign in again.	Tu sesión expiró. Inicia sesión de nuevo.	Deine Sitzung ist abgelaufen. Melde dich erneut an.

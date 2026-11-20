@@ -1,0 +1,12 @@
+.gradle
+**/build
+build-output
+local.properties
+.git
+*.jks
+*.keystore
+*.log
+SOURCE_DELIVERY.md
+.env
+.env.*
+private

@@ -1,0 +1,13 @@
+.gradle/
+.kotlin/
+**/build/
+build-output/
+local.properties
+.idea/
+*.jks
+*.keystore
+.env
+.env.*
+private/
+*.log
+/SOURCE_DELIVERY.md
