@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebResourceRequest
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -35,10 +37,12 @@ import org.jdownloader.remote.domain.*
     }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         if (state.captchas.isEmpty()) Text(stringResource(R.string.no_captchas))
-        LazyColumn(Modifier.weight(1f)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.captchas) { job ->
                 val id = job.number("id")
-                Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) {
+                OutlinedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f))) { Column(Modifier.padding(12.dp)) {
                     Text(job.text("hoster") + " · " + job.text("type"))
                     Row {
                         TextButton(onClick = {

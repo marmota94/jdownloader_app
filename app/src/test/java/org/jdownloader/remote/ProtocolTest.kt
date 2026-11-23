@@ -36,6 +36,32 @@ class ProtocolTest {
         val token = MyJdCrypto.token(MyJdCrypto.unhex(seeded.deviceSecret), seeded.session)
         return respond(MyJdCrypto.encrypt(token, buildJsonObject { put("rid", payload.getValue("rid")); put("data", data) }.toString()))
     }
+    @Test fun deviceOverviewTargetsRequestedServerWithoutChangingSelection() = runTest {
+        val paths = mutableListOf<String>()
+        val api = seededApi { request, payload ->
+            paths.add(request.url.encodedPath)
+            encrypted(payload, when (request.url.encodedPath.substringAfterLast('/')) {
+                "getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "getStatus" -> Json.parseToJsonElement("""{"pause":true,"speed":0,"download_current":25,"download_complete":100}""")
+                else -> JsonPrimitive(123)
+            })
+        }
+        try {
+            // A preview is also available before any server has been selected.
+            assertEquals("PAUSE", api.deviceOverview("preview").state)
+            try { api.rpc("/downloadcontroller/getSpeedInBps", emptyList()); fail("Preview selected a server") }
+            catch (e: ApiException) { assertEquals("DEVICE_REQUIRED", e.kind) }
+            api.select(Device("selected", "Selected"))
+            assertEquals(0.25f, api.deviceOverview("other").progress!!, 0f)
+            assertEquals(123, api.rpc("/downloadcontroller/getSpeedInBps", emptyList()).jsonPrimitive.int)
+            assertEquals(listOf(
+                "/t_${seeded.session}_preview/toolbar/getStatus",
+                "/t_${seeded.session}_selected/device/getDirectConnectionInfos",
+                "/t_${seeded.session}_other/toolbar/getStatus",
+                "/t_${seeded.session}_selected/downloadcontroller/getSpeedInBps"
+            ), paths)
+        } finally { api.http.close() }
+    }
     @Test fun backgroundPackageQueryWorksWithoutAnInMemoryDevice() = runTest {
         val api = seededApi { request, payload ->
             assertEquals("/t_${seeded.session}_saved-device/downloadsV2/queryPackages", request.url.encodedPath)
@@ -46,6 +72,223 @@ class ProtocolTest {
         try {
             val packages = api.queryPackages("saved-device", buildJsonObject { put("finished", true) }).transfers()
             assertEquals(true, packages.single().finished)
+        } finally { api.http.close() }
+    }
+    @Test fun serverLimitsReadAndWriteTheActualSettingsWithExplicitEnableFlag() = runTest {
+        val values = mutableMapOf<String, JsonElement>(
+            "DownloadSpeedLimitEnabled" to JsonPrimitive(true), "DownloadSpeedLimit" to JsonPrimitive(65536),
+            "MaxSimultaneDownloads" to JsonPrimitive(3), "MaxChunksPerFile" to JsonPrimitive(2),
+            "MaxSimultaneDownloadsPerHost" to JsonPrimitive(1))
+        val writes = mutableListOf<String>()
+        val api = seededApi { _, payload ->
+            val params = payload.getValue("params").jsonArray.map { Json.parseToJsonElement(it.jsonPrimitive.content) }
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/config/get", "/config/set" -> {
+                    assertEquals(JsonPrimitive("org.jdownloader.settings.GeneralSettings"), params[0])
+                    assertEquals(JsonNull, params[1])
+                    val key = params[2].jsonPrimitive.content
+                    if (payload.text("url") == "/config/set") {
+                        values[key] = params[3]; writes.add(key); JsonPrimitive(true)
+                    } else values.getValue(key)
+                }
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            assertEquals(ServerLimits(65536, 3, 2, 1), api.serverLimits())
+            api.saveServerLimits(ServerLimits(0, 5, 4, 2))
+            assertEquals(ServerLimits(0, 5, 4, 2), api.serverLimits())
+            assertEquals(JsonPrimitive(65536), values["DownloadSpeedLimit"])
+            api.saveServerLimits(ServerLimits(2048, 2, 3, 1))
+            assertEquals(ServerLimits(2048, 2, 3, 1), api.serverLimits())
+            assertEquals("DownloadSpeedLimitEnabled", writes.last())
+        } finally { api.http.close() }
+    }
+
+    @Test fun rejectedServerSettingStopsFurtherChanges() = runTest {
+        var writes = 0
+        val api = seededApi { _, payload ->
+            encrypted(payload, if (payload.text("url") == "/device/getDirectConnectionInfos") buildJsonObject { put("infos", JsonArray(emptyList())) }
+                else { writes++; JsonPrimitive(false) })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            try { api.saveServerLimits(ServerLimits(1024, 3)); fail("Rejected write must fail") }
+            catch (e: ApiException) { assertEquals("REQUEST_FAILED", e.kind) }
+            assertEquals(1, writes)
+        } finally { api.http.close() }
+    }
+
+    @Test fun updateCheckRequestsACheckAndReadsAvailability() = runTest {
+        val calls = mutableListOf<String>()
+        val api = seededApi { _, payload ->
+            val path = payload.text("url"); calls.add(path)
+            encrypted(payload, when (path) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/update/runUpdateCheck" -> JsonNull
+                "/update/isUpdateAvailable" -> JsonPrimitive(true)
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            assertTrue(api.checkServerUpdates())
+            assertEquals(listOf("/device/getDirectConnectionInfos", "/update/runUpdateCheck", "/update/isUpdateAvailable"), calls)
+        } finally { api.http.close() }
+    }
+
+    @Test fun advancedSearchEscapesInputAndSaveReadsBackTheServerValue() = runTest {
+        val api = seededApi { _, payload ->
+            val params = payload.getValue("params").jsonArray.map { Json.parseToJsonElement(it.jsonPrimitive.content) }
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/config/query" -> {
+                    val query = params.single().jsonObject
+                    val regex = Regex(query.getValue("pattern").jsonPrimitive.content)
+                    assertTrue(regex.matches("org.example.Setting.Key[a]"))
+                    assertFalse(regex.matches("org.example.Setting.Keya"))
+                    assertTrue(query.getValue("includeExtensions").jsonPrimitive.boolean)
+                    Json.parseToJsonElement("""[{"interfaceName":"org.example.Setting","storage":"custom","key":"Key[a]","abstractType":"INT","value":2,"docs":"Description"}]""")
+                }
+                "/config/set" -> {
+                    assertEquals(listOf(JsonPrimitive("org.example.Setting"), JsonPrimitive("custom"), JsonPrimitive("Key[a]"), JsonPrimitive(5)), params)
+                    JsonPrimitive(true)
+                }
+                "/config/get" -> JsonPrimitive(5)
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            val entry = api.advancedSettings("[a]").single()
+            assertEquals("Description", entry.description)
+            assertEquals(JsonPrimitive(5), api.saveAdvancedSetting(entry, JsonPrimitive(5)))
+        } finally { api.http.close() }
+    }
+
+    @Test fun addingArchivePasswordKeepsExistingPasswordsAndExtractionOptions() = runTest {
+        var updates = 0
+        val api = seededApi { _, payload ->
+            val params = payload.getValue("params").jsonArray.map { Json.parseToJsonElement(it.jsonPrimitive.content) }
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/extraction/getArchiveInfo" -> {
+                    assertEquals("[[42],[]]", JsonArray(params).toString())
+                    Json.parseToJsonElement("""[{"archiveId":"archive"},{"archiveId":"archive"}]""")
+                }
+                "/extraction/getArchiveSettings" -> Json.parseToJsonElement("""[{"archiveId":"archive","passwords":["old"],"autoExtract":true,"extractPath":"/keep","finalPassword":"known"}]""")
+                "/extraction/setArchiveSettings" -> {
+                    updates++
+                    assertEquals(JsonPrimitive("archive"), params[0])
+                    assertEquals(Json.parseToJsonElement("""{"passwords":["old","new"]}"""), params[1])
+                    JsonPrimitive(true)
+                }
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            api.addArchivePassword(listOf(42), emptyList(), "new")
+            assertEquals(1, updates)
+        } finally { api.http.close() }
+    }
+    @Test fun archivePasswordRejectsEmptyInputAndReportsMissingArchive() = runTest {
+        var lookups = 0
+        val api = seededApi { _, payload ->
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/extraction/getArchiveInfo" -> { lookups++; JsonArray(emptyList()) }
+                else -> error("Must not modify a missing archive")
+            })
+        }
+        try {
+            try { api.addArchivePassword(listOf(42), emptyList(), ""); fail("Empty password") }
+            catch (_: IllegalArgumentException) {}
+            assertEquals(0, lookups)
+            api.select(Device("id", "Server"))
+            try { api.addArchivePassword(emptyList(), listOf(10), "password"); fail("Missing archive") }
+            catch (e: ApiException) { assertEquals("ARCHIVE_NOT_FOUND", e.kind) }
+            assertEquals(1, lookups)
+        } finally { api.http.close() }
+    }
+    @Test fun archiveInfoJoinsSettingsByIdAndReportsPartReadiness() = runTest {
+        val api = seededApi { _, payload ->
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/extraction/getArchiveInfo" -> Json.parseToJsonElement("""[
+                    {"archiveId":"a","archiveName":"Ready","controllerId":-1,"controllerStatus":"NA","states":{"part1":"COMPLETE"}},
+                    {"archiveId":"b","archiveName":"Waiting","controllerId":77,"controllerStatus":"QUEUED","states":{"part1":"MISSING"}},
+                    {"archiveId":"a","archiveName":"Ready"}]
+                """)
+                "/extraction/getArchiveSettings" -> Json.parseToJsonElement("""[
+                    {"archiveId":"b","autoExtract":false,"extractPath":"/waiting"},
+                    {"archiveId":"a","autoExtract":null,"extractPath":""}]
+                """)
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            val archives = api.archiveInfo(emptyList(), listOf(42))
+            assertEquals(listOf("a", "b"), archives.map { it.id })
+            assertTrue(archives[0].ready)
+            assertNull(archives[0].autoExtract)
+            assertFalse(archives[1].ready)
+            assertEquals(77L, archives[1].controllerId)
+            assertEquals("/waiting", archives[1].extractPath)
+        } finally { api.http.close() }
+    }
+
+    @Test fun archiveOptionsAreAppliedAsAPartialUpdate() = runTest {
+        var saved = false
+        val api = seededApi { _, payload ->
+            val params = payload.getValue("params").jsonArray.map { Json.parseToJsonElement(it.jsonPrimitive.content) }
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/extraction/getArchiveSettings" -> Json.parseToJsonElement("""[{"archiveId":"a","autoExtract":false,"extractPath":"/old","passwords":["old"],"removeFilesAfterExtraction":true}]""")
+                "/extraction/setArchiveSettings" -> {
+                    assertEquals(JsonPrimitive("a"), params[0])
+                    assertEquals(Json.parseToJsonElement("""{"autoExtract":true,"extractPath":"/new","passwords":["old","new"]}"""), params[1])
+                    saved = true; JsonPrimitive(true)
+                }
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            api.saveArchiveOptions("a", true, "/new", "new")
+            assertTrue(saved)
+        } finally { api.http.close() }
+    }
+
+    @Test fun extractionChecksQueueAcceptanceAndCancelsByControllerId() = runTest {
+        var starts = 0
+        var cancelled = false
+        val api = seededApi { _, payload ->
+            val params = payload.getValue("params").jsonArray.map { Json.parseToJsonElement(it.jsonPrimitive.content) }
+            encrypted(payload, when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> buildJsonObject { put("infos", JsonArray(emptyList())) }
+                "/extraction/startExtractionNow" -> {
+                    assertEquals("[[],[42]]", JsonArray(params).toString())
+                    starts++
+                    if (starts == 1) buildJsonObject { put("77", true) } else buildJsonObject {}
+                }
+                "/extraction/cancelExtraction" -> {
+                    assertEquals(JsonPrimitive(77), params.single())
+                    cancelled = true; JsonPrimitive(true)
+                }
+                else -> error("Unexpected endpoint")
+            })
+        }
+        try {
+            api.select(Device("id", "Server"))
+            api.startExtraction(emptyList(), listOf(42))
+            api.cancelExtraction(77)
+            assertTrue(cancelled)
+            try { api.startExtraction(emptyList(), listOf(42)); fail("No extraction was queued") }
+            catch (e: ApiException) { assertEquals("EXTRACTION_NOT_READY", e.kind) }
         } finally { api.http.close() }
     }
     @Test fun signedConnectAndReconnectRotateCorrectKey() = runTest {
@@ -63,9 +306,17 @@ class ProtocolTest {
             val rid = request.url.parameters["rid"]!!.toLong()
             when (call++) {
                 0 -> { assertEquals("/my/connect", request.url.encodedPath); respond(MyJdCrypto.encrypt(key, "{\"rid\":$rid,\"sessiontoken\":\"$firstToken\",\"regaintoken\":\"regain\"}")) }
-                1 -> respond("{\"src\":\"MYJD\",\"type\":\"TOKEN_INVALID\"}", HttpStatusCode.Forbidden)
-                2 -> { assertEquals("/my/reconnect", request.url.encodedPath); respond(MyJdCrypto.encrypt(key, "{\"rid\":$rid,\"sessiontoken\":\"$secondToken\",\"regaintoken\":\"next\"}")) }
+                1 -> {
+                    assertFalse(api.reconnecting.value)
+                    respond("{\"src\":\"MYJD\",\"type\":\"TOKEN_INVALID\"}", HttpStatusCode.Forbidden)
+                }
+                2 -> {
+                    assertEquals("/my/reconnect", request.url.encodedPath)
+                    assertTrue(api.reconnecting.value)
+                    respond(MyJdCrypto.encrypt(key, "{\"rid\":$rid,\"sessiontoken\":\"$secondToken\",\"regaintoken\":\"next\"}"))
+                }
                 else -> {
+                    assertFalse(api.reconnecting.value)
                     assertEquals(MyJdCrypto.sign(MyJdCrypto.token(key, secondToken), unsigned), request.url.parameters["signature"])
                     respond(MyJdCrypto.encrypt(MyJdCrypto.token(key, secondToken), "{\"rid\":$rid,\"list\":[]}"))
                 }
@@ -173,6 +424,27 @@ class ProtocolTest {
             assertEquals(JsonPrimitive(42), api.rpc("/downloadcontroller/getSpeedInBps", emptyList()))
             assertEquals(Connection.CLOUD, api.connection.value)
             assertEquals(1, lanRequests); assertEquals(1, cloudReads)
+        } finally { api.http.close() }
+    }
+    @Test fun failedLanOverviewFallsBackToCloud() = runTest {
+        var cloudReads = 0
+        val api = seededApi { request, payload ->
+            when (payload.text("url")) {
+                "/device/getDirectConnectionInfos" -> encrypted(payload, buildJsonObject { put("infos", JsonArray(listOf(buildJsonObject { put("ip", "192.168.1.2"); put("port", 3128) }))) })
+                "/device/ping" -> encrypted(payload, JsonPrimitive(true))
+                else -> if (request.url.host == "192.168.1.2") throw java.io.IOException("connection lost")
+                    else {
+                        cloudReads++
+                        encrypted(payload, Json.parseToJsonElement("""{"state":"Stopped","speed":0,"download_current":10,"download_complete":100}"""))
+                    }
+            }
+        }
+        try {
+            api.select(Device("id", "Computer"))
+            assertEquals(Connection.LAN, api.connection.value)
+            assertEquals(0.1f, api.deviceOverview("id").progress!!, 0.0001f)
+            assertEquals(Connection.CLOUD, api.connection.value)
+            assertEquals(1, cloudReads)
         } finally { api.http.close() }
     }
     @Test fun ambiguousLanMutationIsNotReplayed() = runTest {

@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
@@ -32,6 +33,8 @@ class RequestIds { private val value = AtomicLong(System.currentTimeMillis()); f
     private var device: Device? = null
     private var direct: String? = null
     val connection = MutableStateFlow(Connection.CLOUD)
+    private val recoveringSession = MutableStateFlow(false)
+    val reconnecting = recoveringSession.asStateFlow()
     private val base = "https://api.jdownloader.org"
     private val appKey = org.jdownloader.remote.BuildConfig.MYJD_APP_KEY
     private suspend fun current(): Session {
@@ -92,24 +95,32 @@ class RequestIds { private val value = AtomicLong(System.currentTimeMillis()); f
         val s = current()
         return try { block(s) } catch (e: ApiException) {
             if (e.kind != "TOKEN_INVALID" && !(e.kind == "SESSION" && e.source == "DEVICE")) throw e
+            recoveringSession.value = true
             try {
-                reconnect(s)
-            } catch (rejected: ApiException) {
-                if (rejected.kind !in setOf("TOKEN_INVALID", "AUTH_FAILED")) throw rejected
-                val recovery = s.recovery?.takeIf { it.expiresAt > System.currentTimeMillis() }
-                if (recovery == null) {
-                    persist(null)
-                    throw ApiException("LOGIN_REQUIRED")
-                }
-                try {
-                    persist(connect(recovery.email, MyJdCrypto.unhex(recovery.loginKey), s.deviceSecret, recovery))
-                } catch (failed: ApiException) {
-                    if (failed.kind != "AUTH_FAILED") throw failed
-                    persist(null)
-                    throw ApiException("LOGIN_REQUIRED")
-                }
+                recoverSession(s)
+            } finally {
+                recoveringSession.value = false
             }
             block(current())
+        }
+    }
+    private suspend fun recoverSession(s: Session) {
+        try {
+            reconnect(s)
+        } catch (rejected: ApiException) {
+            if (rejected.kind !in setOf("TOKEN_INVALID", "AUTH_FAILED")) throw rejected
+            val recovery = s.recovery?.takeIf { it.expiresAt > System.currentTimeMillis() }
+            if (recovery == null) {
+                persist(null)
+                throw ApiException("LOGIN_REQUIRED")
+            }
+            try {
+                persist(connect(recovery.email, MyJdCrypto.unhex(recovery.loginKey), s.deviceSecret, recovery))
+            } catch (failed: ApiException) {
+                if (failed.kind != "AUTH_FAILED") throw failed
+                persist(null)
+                throw ApiException("LOGIN_REQUIRED")
+            }
         }
     }
     suspend fun devices(): List<Device> = mutex.withLock { authenticated { s ->
@@ -158,6 +169,112 @@ class RequestIds { private val value = AtomicLong(System.currentTimeMillis()); f
     suspend fun queryPackages(deviceId: String, query: JsonObject): JsonElement =
         callDevice("/downloadsV2/queryPackages", listOf(query), targetId = deviceId)
 
+    suspend fun deviceOverview(deviceId: String): DeviceOverview =
+        callDevice("/toolbar/getStatus", emptyList(), targetId = deviceId).deviceOverview()
+
+    private suspend fun setting(key: String) = rpc("/config/get", listOf(
+        JsonPrimitive("org.jdownloader.settings.GeneralSettings"), JsonNull, JsonPrimitive(key)))
+
+    private suspend fun setSetting(key: String, value: JsonElement) {
+        val saved = rpc("/config/set", listOf(JsonPrimitive("org.jdownloader.settings.GeneralSettings"), JsonNull, JsonPrimitive(key), value))
+        if (saved.jsonPrimitive.booleanOrNull != true) throw ApiException("REQUEST_FAILED")
+    }
+
+    suspend fun serverLimits(): ServerLimits {
+        val enabled = setting("DownloadSpeedLimitEnabled").jsonPrimitive.boolean
+        val speed = setting("DownloadSpeedLimit").jsonPrimitive.int
+        val downloads = setting("MaxSimultaneDownloads").jsonPrimitive.int
+        val chunks = setting("MaxChunksPerFile").jsonPrimitive.int
+        val perHost = setting("MaxSimultaneDownloadsPerHost").jsonPrimitive.int
+        return ServerLimits(if (enabled) speed else 0, downloads, chunks, perHost)
+    }
+
+    suspend fun saveServerLimits(value: ServerLimits) {
+        if (value.speedLimit > 0) setSetting("DownloadSpeedLimit", JsonPrimitive(value.speedLimit))
+        setSetting("MaxSimultaneDownloads", JsonPrimitive(value.maxDownloads))
+        setSetting("MaxChunksPerFile", JsonPrimitive(value.maxChunks))
+        setSetting("MaxSimultaneDownloadsPerHost", JsonPrimitive(value.maxPerHost))
+        setSetting("DownloadSpeedLimitEnabled", JsonPrimitive(value.speedLimit > 0))
+    }
+
+    suspend fun checkServerUpdates(): Boolean {
+        rpc("/update/runUpdateCheck", emptyList())
+        return rpc("/update/isUpdateAvailable", emptyList()).jsonPrimitive.boolean
+    }
+
+    suspend fun advancedSettings(search: String): List<AdvancedSetting> {
+        require(search.trim().length in 2..100)
+        val query = buildJsonObject {
+            put("pattern", "(?i).*" + Regex.escape(search.trim()) + ".*")
+            put("values", true); put("description", true); put("enumInfo", true); put("includeExtensions", true)
+        }
+        return rpc("/config/query", listOf(query)).jsonArray.map { entry ->
+            val obj = entry.jsonObject
+            AdvancedSetting(entry.text("interfaceName"), obj["storage"] ?: JsonNull, entry.text("key"), entry.text("abstractType"),
+                obj["value"] ?: JsonNull, entry.text("docs"), (obj["enumOptions"] as? JsonArray).orEmpty().mapNotNull {
+                    (it as? JsonArray)?.firstOrNull()?.jsonPrimitive?.contentOrNull
+                })
+        }.sortedBy { it.key }
+    }
+
+    suspend fun saveAdvancedSetting(setting: AdvancedSetting, value: JsonElement): JsonElement {
+        require(setting.interfaceName.isNotBlank() && setting.key.isNotBlank())
+        val saved = rpc("/config/set", listOf(JsonPrimitive(setting.interfaceName), setting.storage, JsonPrimitive(setting.key), value))
+        if (saved.jsonPrimitive.booleanOrNull != true) throw ApiException("REQUEST_FAILED")
+        return rpc("/config/get", listOf(JsonPrimitive(setting.interfaceName), setting.storage, JsonPrimitive(setting.key)))
+    }
+
+    suspend fun addArchivePassword(linkIds: List<Long>, packageIds: List<Long>, password: String) {
+        require(password.isNotBlank() && (linkIds.isNotEmpty() || packageIds.isNotEmpty()))
+        val archives = rpc("/extraction/getArchiveInfo", listOf(JsonArray(linkIds.map { JsonPrimitive(it) }), JsonArray(packageIds.map { JsonPrimitive(it) })))
+            .jsonArray.map { it.text("archiveId") }.filter { it.isNotBlank() }.distinct()
+        if (archives.isEmpty()) throw ApiException("ARCHIVE_NOT_FOUND")
+        val settings = rpc("/extraction/getArchiveSettings", listOf(JsonArray(archives.map { JsonPrimitive(it) }))).jsonArray
+        for (id in archives) {
+            val current = settings.firstOrNull { it.text("archiveId") == id } ?: throw ApiException("ARCHIVE_NOT_FOUND")
+            val passwords = (current.jsonObject["passwords"] as? JsonArray).orEmpty().map { it.jsonPrimitive.content }
+            val saved = rpc("/extraction/setArchiveSettings", listOf(JsonPrimitive(id), buildJsonObject {
+                put("passwords", JsonArray((passwords + password).distinct().map { JsonPrimitive(it) }))
+            }))
+            if (saved.jsonPrimitive.booleanOrNull != true) throw ApiException("REQUEST_FAILED")
+        }
+    }
+
+    suspend fun archiveInfo(linkIds: List<Long>, packageIds: List<Long>): List<ArchiveInfo> {
+        require(linkIds.isNotEmpty() || packageIds.isNotEmpty())
+        val archives = rpc("/extraction/getArchiveInfo", listOf(JsonArray(linkIds.map { JsonPrimitive(it) }), JsonArray(packageIds.map { JsonPrimitive(it) })))
+            .jsonArray.filter { it.text("archiveId").isNotBlank() }.distinctBy { it.text("archiveId") }
+        if (archives.isEmpty()) return emptyList()
+        val settings = rpc("/extraction/getArchiveSettings", listOf(JsonArray(archives.map { JsonPrimitive(it.text("archiveId")) })))
+            .jsonArray.associateBy { it.text("archiveId") }
+        return archives.map { archive ->
+            val id = archive.text("archiveId")
+            ArchiveInfo(id, archive.text("archiveName"), archive.text("controllerId").toLongOrNull() ?: -1,
+                archive.text("controllerStatus"), (archive.jsonObject["states"] as? JsonObject).orEmpty().mapValues { it.value.jsonPrimitive.content },
+                settings[id]?.jsonObject ?: throw ApiException("ARCHIVE_NOT_FOUND"))
+        }
+    }
+
+    suspend fun saveArchiveOptions(id: String, autoExtract: Boolean?, extractPath: String, password: String) {
+        require(id.isNotBlank())
+        val current = rpc("/extraction/getArchiveSettings", listOf(JsonArray(listOf(JsonPrimitive(id)))))
+            .jsonArray.firstOrNull { it.text("archiveId") == id }?.jsonObject ?: throw ApiException("ARCHIVE_NOT_FOUND")
+        val patch = archiveSettingsPatch(current, autoExtract, extractPath, password)
+        if (patch.isEmpty()) return
+        if (rpc("/extraction/setArchiveSettings", listOf(JsonPrimitive(id), patch)).jsonPrimitive.booleanOrNull != true) throw ApiException("REQUEST_FAILED")
+    }
+
+    suspend fun startExtraction(linkIds: List<Long>, packageIds: List<Long>) {
+        require(linkIds.isNotEmpty() || packageIds.isNotEmpty())
+        val result = rpc("/extraction/startExtractionNow", listOf(JsonArray(linkIds.map { JsonPrimitive(it) }), JsonArray(packageIds.map { JsonPrimitive(it) }))).jsonObject
+        if (result.values.none { (it as? JsonPrimitive)?.booleanOrNull == true }) throw ApiException("EXTRACTION_NOT_READY")
+    }
+
+    suspend fun cancelExtraction(controllerId: Long) {
+        require(controllerId >= 0)
+        if (rpc("/extraction/cancelExtraction", listOf(JsonPrimitive(controllerId))).jsonPrimitive.booleanOrNull != true) throw ApiException("REQUEST_FAILED")
+    }
+
     private suspend fun callDevice(path: String, params: List<JsonElement>, targetId: String?): JsonElement = mutex.withLock { authenticated { s ->
         val selected = device
         val d = if (targetId != null && selected?.id != targetId) Device(targetId, "")
@@ -171,7 +288,7 @@ class RequestIds { private val value = AtomicLong(System.currentTimeMillis()); f
             // In particular TOKEN_INVALID must reach authenticated() to reconnect.
             if (e is ApiException) throw e
             // Mutations can have reached the LAN device before a timeout: never replay them.
-            val readOnly = path.substringAfterLast('/') in setOf("queryPackages", "queryLinks", "getCurrentState", "getSpeedInBps", "list", "get", "ping")
+            val readOnly = path in setOf("/toolbar/getStatus", "/update/isUpdateAvailable", "/config/query", "/extraction/getArchiveInfo", "/extraction/getArchiveSettings") || path.substringAfterLast('/') in setOf("queryPackages", "queryLinks", "getCurrentState", "getSpeedInBps", "list", "get", "ping")
             val neverConnected = e is java.net.ConnectException || e is io.ktor.client.network.sockets.ConnectTimeoutException
             if (!readOnly && !neverConnected) throw ApiException("DELIVERY_UNCERTAIN")
             deviceCall(s, d, path, params, base)

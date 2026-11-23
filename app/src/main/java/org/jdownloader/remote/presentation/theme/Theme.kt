@@ -28,10 +28,10 @@ import org.jdownloader.remote.domain.*
             inversePrimary = settings.accent.color(!dark)
         )
     }
+    // Keep elevated surfaces from the dark scheme so overlays and cards remain distinct.
     if (settings.theme == ThemeMode.AMOLED) colors = colors.copy(
-        background = Color.Black, surface = Color.Black, surfaceDim = Color.Black, surfaceBright = Color.Black,
-        surfaceContainerLowest = Color.Black, surfaceContainerLow = Color.Black, surfaceContainer = Color.Black,
-        surfaceContainerHigh = Color.Black, surfaceContainerHighest = Color.Black
+        background = Color.Black, surface = Color.Black, surfaceDim = Color.Black,
+        surfaceContainerLowest = Color.Black
     )
     MaterialTheme(colorScheme = colors, content = content)
 }

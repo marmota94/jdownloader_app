@@ -28,7 +28,7 @@ links_added	Links sent to JDownloader.	Enlaces enviados a JDownloader.	Links an 
 add_links	Add links	Añadir enlaces	Links hinzufügen
 links	URLs (one per line)	URLs (una por línea)	URLs (eine pro Zeile)
 package_name	Package name (optional)	Nombre del paquete (opcional)	Paketname (optional)
-package_password	Package password (optional)	Contraseña del paquete (opcional)	Paketpasswort (optional)
+package_password	Download password (optional)	Contraseña de descarga (opcional)	Download-Passwort (optional)
 send	Send	Enviar	Senden
 empty_list	Nothing here yet.	Aún no hay elementos.	Noch keine Einträge.
 transfer_progress	%1$d / %2$d KiB · %3$s	%1$d / %2$d KiB · %3$s	%1$d / %2$d KiB · %3$s
@@ -49,7 +49,7 @@ spanish	Spanish	Español	Spanisch
 german	German	Alemán	Deutsch
 cnl_service	Click and Load receiver	Receptor Click and Load	Click-and-Load-Empfänger
 cnl_notification	Listening on 127.0.0.1:9666	Escuchando en 127.0.0.1:9666	Empfang auf 127.0.0.1:9666
-cnl_explanation	When enabled, websites can send links to the selected JDownloader through the local receiver or this app’s browser. Enable it only while visiting trusted sites. External browsers may block HTTPS-to-HTTP requests. Android can stop the service; open Settings to enable it again.	Al activarlo, los sitios pueden enviar enlaces al JDownloader seleccionado mediante el receptor local o el navegador de esta app. Actívalo solo al visitar sitios de confianza. Los navegadores externos pueden bloquear solicitudes de HTTPS a HTTP. Android puede detener el servicio; vuelve a Ajustes para activarlo.	Wenn aktiviert, können Webseiten über den lokalen Empfänger oder diesen Browser Links an den ausgewählten JDownloader senden. Aktiviere ihn nur für vertrauenswürdige Seiten. Externe Browser können HTTPS-zu-HTTP-Anfragen blockieren. Android kann den Dienst beenden; aktiviere ihn dann in den Einstellungen erneut.
+cnl_explanation	Runs a local Click and Load service for the selected JDownloader. External browsers may block HTTPS-to-HTTP requests. Android can stop the service; enable it again here when needed.	Ejecuta un servicio local Click and Load para el JDownloader seleccionado. Los navegadores externos pueden bloquear solicitudes de HTTPS a HTTP. Android puede detener el servicio; vuelve a activarlo aquí cuando lo necesites.	Startet einen lokalen Click-and-Load-Dienst für den ausgewählten JDownloader. Externe Browser können HTTPS-zu-HTTP-Anfragen blockieren. Android kann den Dienst beenden; aktiviere ihn bei Bedarf hier erneut.
 browser_address	Website address (HTTPS)	Dirección del sitio (HTTPS)	Webadresse (HTTPS)
 go	Go	Ir	Öffnen
 back	Back	Atrás	Zurück
@@ -77,6 +77,14 @@ accent_purple	Purple	Morado	Violett
 accent_green	Green	Verde	Grün
 accent_orange	Orange	Naranja	Orange
 accent_pink	Pink	Rosado	Rosa
+accent_red	Red	Rojo	Rot
+accent_amber	Amber	Ámbar	Bernstein
+accent_lime	Lime	Verde lima	Limettengrün
+accent_cyan	Cyan	Cian	Cyan
+accent_indigo	Indigo	Índigo	Indigo
+accent_lavender	Lavender	Lavanda	Lavendel
+accent_magenta	Magenta	Magenta	Magenta
+accent_slate	Slate	Gris pizarra	Schiefergrau
 remember_session	Keep me signed in for 30 days	Mantener mi sesión durante 30 días	30 Tage angemeldet bleiben
 remember_session_detail	Stores an encrypted sign-in key on this device.	Guarda una clave de inicio de sesión cifrada en este dispositivo.	Speichert einen verschlüsselten Anmeldeschlüssel auf diesem Gerät.
 session_expired	Your session expired. Sign in again.	Tu sesión expiró. Inicia sesión de nuevo.	Deine Sitzung ist abgelaufen. Melde dich erneut an.
@@ -89,3 +97,100 @@ device_actions	Server actions	Acciones del servidor	Serveraktionen
 completion_alerts	Package completion notifications	Notificaciones de paquetes completados	Benachrichtigungen für fertige Pakete
 completion_alerts_detail	Alerts you when a package finishes on the selected server. Background checks may be delayed.	Te avisa cuando termina un paquete en el servidor seleccionado. Las comprobaciones en segundo plano pueden demorarse.	Meldet fertige Pakete auf dem ausgewählten Server. Hintergrundprüfungen können sich verzögern.
 package_finished	Package download complete	Descarga del paquete completada	Paketdownload abgeschlossen
+device_status_loading	Loading status…	Cargando estado…	Status wird geladen…
+device_name_status	%1$s: %2$s	%1$s: %2$s	%1$s: %2$s
+device_status_unavailable	Status unavailable	Estado no disponible	Status nicht verfügbar
+device_online	Online	En línea	Online
+device_running	Running	En marcha	Läuft
+device_paused	Paused	En pausa	Pausiert
+device_stopped	Stopped	Detenido	Gestoppt
+device_stopping	Stopping…	Deteniendo…	Wird gestoppt…
+device_progress	%1$s of %2$s · %3$s	%1$s de %2$s · %3$s	%1$s von %2$s · %3$s
+device_progress_unknown	%1$s downloaded · total size unavailable	%1$s descargados · tamaño total no disponible	%1$s heruntergeladen · Gesamtgröße unbekannt
+download_counts	%1$d items · %2$d finished	%1$d elementos · %2$d finalizados	%1$d Einträge · %2$d fertig
+folder_counts	%1$d/%2$d finished	%1$d/%2$d finalizados	%1$d/%2$d fertig
+selection_counts	%1$d selected · %2$d finished	%1$d seleccionados · %2$d finalizados	%1$d ausgewählt · %2$d fertig
+item_count	%1$d items	%1$d elementos	%1$d Einträge
+select_all	Select all	Seleccionar todo	Alle auswählen
+clear_selection	Clear selection	Limpiar selección	Auswahl aufheben
+select_transfer	Select %1$s	Seleccionar %1$s	%1$s auswählen
+enable	Enable	Habilitar	Aktivieren
+disable	Disable	Deshabilitar	Deaktivieren
+disabled	Disabled	Deshabilitado	Deaktiviert
+finished	Finished	Finalizado	Fertig
+downloading	Downloading	Descargando	Wird heruntergeladen
+queued	Queued	En cola	In Warteschlange
+move_up	Move up	Mover arriba	Nach oben
+move_down	Move down	Mover abajo	Nach unten
+time_remaining	%1$s remaining	%1$s restantes	%1$s verbleibend
+server_settings	Server settings	Ajustes del servidor	Servereinstellungen
+server_speed	Maximum speed (KiB/s)	Velocidad máxima (KiB/s)	Maximale Geschwindigkeit (KiB/s)
+server_speed_hint	0 = unlimited	0 = sin límite	0 = unbegrenzt
+server_downloads	Simultaneous downloads (1–20)	Descargas simultáneas (1–20)	Gleichzeitige Downloads (1–20)
+server_chunks	Chunks per download (1–20)	Fragmentos por descarga (1–20)	Verbindungen pro Download (1–20)
+server_per_host	Simultaneous downloads per host (1–40)	Descargas simultáneas por servidor de archivos (1–40)	Gleichzeitige Downloads pro Hoster (1–40)
+server_limits_invalid	Enter a valid speed, 1–20 downloads/chunks, and 1–40 downloads per host.	Ingresa una velocidad válida, 1–20 descargas/fragmentos y 1–40 descargas por servidor de archivos.	Gültige Geschwindigkeit, 1–20 Downloads/Verbindungen und 1–40 Downloads pro Hoster eingeben.
+apply_to_server	Apply to server	Aplicar al servidor	Auf Server anwenden
+reload_server_settings	Reload server settings	Recargar ajustes del servidor	Servereinstellungen neu laden
+check_server_updates	Check server updates	Buscar actualizaciones del servidor	Serverupdates prüfen
+server_update_available	An update is available on the server.	Hay una actualización disponible en el servidor.	Ein Update ist auf dem Server verfügbar.
+server_update_check_requested	Update check requested. No pending update reported yet.	Comprobación solicitada. Aún no se informa de una actualización pendiente.	Updateprüfung angefordert. Noch kein ausstehendes Update gemeldet.
+advanced_settings	Advanced settings	Ajustes avanzados	Erweiterte Einstellungen
+search_settings	Search server settings	Buscar ajustes del servidor	Servereinstellungen suchen
+search	Search	Buscar	Suchen
+advanced_count	%1$d settings found	%1$d ajustes encontrados	%1$d Einstellungen gefunden
+setting_value	Value	Valor	Wert
+advanced_json_hint	Enter lists and objects as JSON.	Ingresa listas y objetos en formato JSON.	Listen und Objekte als JSON eingeben.
+archive_password	Archive password	Contraseña del archivo comprimido	Archivpasswort
+archive_password_optional	Archive password (optional)	Contraseña del archivo comprimido (opcional)	Archivpasswort (optional)
+archive_not_found	No archive was found for this item.	No se encontró un archivo comprimido para este elemento.	Für diesen Eintrag wurde kein Archiv gefunden.
+save	Save	Guardar	Speichern
+enabled	Enabled	Habilitado	Aktiviert
+overview	Overview	Resumen	Übersicht
+selection	Selection	Selección	Auswahl
+theme_mode	Theme	Tema	Design
+notifications	Notifications	Notificaciones	Benachrichtigungen
+server_updates	Server updates	Actualizaciones del servidor	Serverupdates
+chunks_short	Chunks	Fragmentos	Chunks
+per_host_short	Per host	Por host	Pro Hoster
+parallel_short	Parallel	Paralelas	Parallel
+browse_settings	Browse settings	Explorar ajustes	Einstellungen durchsuchen
+hide_settings	Hide settings	Ocultar ajustes	Einstellungen ausblenden
+setting_range	%1$d–%2$d	%1$d–%2$d	%1$d–%2$d
+hide_form	Hide form	Ocultar formulario	Formular ausblenden
+archive_tools	Archive / extraction	Archivo comprimido / extracción	Archiv / Entpacken
+extraction_server_hint	Archives are extracted on the selected JDownloader server.	Los archivos se extraen en el servidor JDownloader seleccionado.	Archive werden auf dem ausgewählten JDownloader-Server entpackt.
+extracting	Extracting	Extrayendo	Wird entpackt
+archive_ready	Ready to extract	Listo para extraer	Bereit zum Entpacken
+archive_incomplete	Archive incomplete	Archivo incompleto	Archiv unvollständig
+archive_parts	%1$d/%2$d parts ready	%1$d/%2$d partes listas	%1$d/%2$d Teile bereit
+archive_incomplete_hint	Wait until all archive parts have finished downloading.	Espera a que se descarguen todas las partes del archivo.	Warte, bis alle Archivteile vollständig heruntergeladen sind.
+auto_extract	Automatic extraction	Extracción automática	Automatisch entpacken
+server_default	Server default	Predeterminado del servidor	Servervorgabe
+extract_folder	Extract to (server folder)	Extraer en (carpeta del servidor)	Entpacken nach (Serverordner)
+extract_folder_hint	Enter a folder on the server. An existing override needs a nonempty path.	Ingresa una carpeta del servidor. Una ruta personalizada existente no puede quedar vacía.	Ordner auf dem Server eingeben. Ein vorhandener eigener Pfad darf nicht leer sein.
+archive_password_hint	Adds a password without replacing saved passwords.	Agrega una contraseña sin reemplazar las guardadas.	Fügt ein Passwort hinzu, ohne gespeicherte Passwörter zu ersetzen.
+save_before_extract	Save your changes before starting extraction.	Guarda los cambios antes de iniciar la extracción.	Änderungen vor dem Entpacken speichern.
+extract_now	Extract now	Extraer ahora	Jetzt entpacken
+extract_all	Extract all ready archives	Extraer todos los archivos listos	Alle fertigen Archive entpacken
+cancel_extraction	Cancel extraction	Cancelar extracción	Entpacken abbrechen
+extraction_not_ready	No extraction was queued. Check that the archive is complete and is not already extracting.	No se agregó ninguna extracción. Comprueba que el archivo esté completo y no se esté extrayendo.	Kein Entpackauftrag hinzugefügt. Prüfe, ob das Archiv vollständig ist und nicht bereits entpackt wird.
+retry_download	Retry download	Reintentar descarga	Download erneut versuchen
+archive_show_pending_parts	Show pending parts (%1$d)	Mostrar partes pendientes (%1$d)	Ausstehende Teile anzeigen (%1$d)
+archive_hide_pending_parts	Hide pending parts	Ocultar partes pendientes	Ausstehende Teile ausblenden
+archive_part_missing	Missing	No se encuentra	Fehlt
+archive_part_incomplete	Incomplete	Incompleta	Unvollständig
+archive_part_unavailable	Part status unavailable	Estado de la parte no disponible	Teilstatus nicht verfügbar
+extract_or_retry	Extract or retry	Extraer o reintentar	Entpacken oder erneut versuchen
+extract_or_retry_all	Extract or retry all ready archives	Extraer o reintentar todos los archivos listos	Alle bereiten Archive entpacken oder erneut versuchen
+reconnecting	Reconnecting…	Reconectando…	Verbindung wird wiederhergestellt…
+last_refreshed	Updated %1$s	Actualizado a las %1$s	Aktualisiert um %1$s
+search_downloads	Search by name, host, or status	Buscar por nombre, host o estado	Nach Name, Hoster oder Status suchen
+filter_all	All	Todos	Alle
+select_results	Select results	Seleccionar resultados	Ergebnisse auswählen
+clear_filters	Clear filters	Borrar filtros	Filter zurücksetzen
+no_download_matches	No downloads match your filters.	Ninguna descarga coincide con los filtros.	Keine Downloads entsprechen den Filtern.
+hidden_selection_count	%1$d selected outside the current results	%1$d seleccionados fuera de los resultados	%1$d ausgewählt außerhalb der aktuellen Ergebnisse
+download_filters	Filters	Filtros	Filter
+filtered_download_count	Matches: %1$d	Coincidencias: %1$d	Treffer: %1$d
+done	Done	Listo	Fertig
